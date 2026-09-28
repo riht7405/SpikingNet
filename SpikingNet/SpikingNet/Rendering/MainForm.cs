@@ -25,18 +25,26 @@ public sealed class MainForm : Form
 
         // --- Строим сеть ---
         _net = new Network();
-        var sensor = _net.AddNeuron("Sensor");
-        var inter1 = _net.AddNeuron("Inter-1");
-        var inter2 = _net.AddNeuron("Inter-2");
-        var output = _net.AddNeuron("Output");
-        var dopamine = _net.AddNeuron("Dopamine");
 
-        _net.Connect(sensor.Index, inter1.Index, 0.6, 1);
-        _net.Connect(sensor.Index, inter2.Index, 0.4, 2);
-        _net.Connect(inter1.Index, inter2.Index, 0.5, 1);
-        _net.Connect(inter2.Index, output.Index, 0.7, 1);
-        _net.Connect(output.Index, inter1.Index, -0.3, 2);
-        _net.Connect(output.Index, dopamine.Index, 0.9, 1);
+        // Два региона: рефлекторная дуга и модуляторная подсистема.
+        var reflex = _net.AddRegion("Reflex");
+        var modulatory = _net.AddRegion("Modulatory");
+
+        var sensor = _net.AddNeuron(reflex, "Sensor");
+        var inter1 = _net.AddNeuron(reflex, "Inter-1");
+        var inter2 = _net.AddNeuron(reflex, "Inter-2");
+        var output = _net.AddNeuron(reflex, "Output");
+        var dopamine = _net.AddNeuron(modulatory, "Dopamine");
+
+        // Внутрирегиональные связи
+        _net.Connect(sensor, inter1, 0.6, 1);
+        _net.Connect(sensor, inter2, 0.4, 2);
+        _net.Connect(inter1, inter2, 0.5, 1);
+        _net.Connect(inter2, output, 0.7, 1);
+        _net.Connect(output, inter1, -0.3, 2);
+
+        // Межрегиональная связь: Reflex → Modulatory
+        _net.Connect(output, dopamine, 0.9, 1);
 
         // --- Стимул: бесконечный периодический ---
         _sim = new Simulation(_net);
@@ -50,12 +58,14 @@ public sealed class MainForm : Form
         _sim.WeightDecay = 0.0005;
 
         // --- Нейромодулятор ---
-        _sim.Modulator = new Neuromodulator("Dopamine")
+        var dopa = new Neuromodulator("Dopamine")
         {
             Decay = 0.93,
             Baseline = 0.05,
             ReleaseAmount = 1.0,
         };
+        modulatory.Modulator = dopa;     // кладём в регион (для будущей архитектуры)
+        _sim.Modulator = dopa;            // Simulation пока использует глобальный
         _sim.ModulatorTriggerIndex = dopamine.Index;
 
         // --- Координаты ---
@@ -339,6 +349,19 @@ public sealed class MainForm : Form
         g.DrawString(
             "blue = excitation (+)   red = inhibition (−)   purple = neuromodulator   dot = signal",
             fontSmall, b2, 12, ClientSize.Height - 22);
+
+        // Список регионов
+        using var fontR = new Font("Consolas", 9);
+        using var bR = new SolidBrush(Color.FromArgb(200, 170, 200, 230));
+        float yR = 105;
+        g.DrawString("Regions:", fontR, bR, 12, yR);
+        yR += 14;
+        foreach (var r in _net.Regions)
+        {
+            string line = $"  {r.Name,-12} {r.Neurons.Count,3}N  {r.Synapses.Count,3}S";
+            g.DrawString(line, fontR, bR, 12, yR);
+            yR += 14;
+        }
     }
 
     private static Color Lerp(Color a, Color b, float t)

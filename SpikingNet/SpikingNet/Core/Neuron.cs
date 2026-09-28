@@ -2,8 +2,13 @@
 
 public sealed class Neuron
 {
-    public int Index { get; internal set; } = -1;
+    public int Index { get; internal set; } = -1;          // глобальный индекс в Network
     public string Name { get; }
+
+    // Ссылка на регион и локальный индекс внутри него.
+    // Заполняется автоматически при Network.AddNeuron.
+    public Region? Region { get; internal set; }
+    public int LocalIndex { get; internal set; } = -1;
 
     // --- Состояние ---
     public double Potential;
