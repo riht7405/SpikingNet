@@ -1,0 +1,215 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\rendering\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\rendering\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\core\\simulation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\core\\simulation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\core\\neuromodulator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\core\\neuromodulator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\core\\isimulationobserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\core\\isimulationobserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\core\\periodicstimulus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\core\\periodicstimulus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\core\\scheduledstimulus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\core\\scheduledstimulus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\core\\istimulus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\core\\istimulus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\core\\network.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\core\\network.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\core\\synapse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\core\\synapse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|c:\\users\\riht\\source\\repos\\spikingnet\\spikingnet\\spikingnet\\core\\neuron.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F46D854-2908-44ED-8FF3-1D9DCF8DC2F6}|SpikingNet\\SpikingNet.csproj|solutionrelative:spikingnet\\core\\neuron.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 11,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Neuromodulator.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\Neuromodulator.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Core\\Neuromodulator.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\Neuromodulator.cs",
+              "RelativeToolTip": "SpikingNet\\Core\\Neuromodulator.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACIAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T17:25:06.789Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MainForm.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Rendering\\MainForm.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Rendering\\MainForm.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Rendering\\MainForm.cs",
+              "RelativeToolTip": "SpikingNet\\Rendering\\MainForm.cs",
+              "ViewState": "AgIAADwBAAAAAAAAAAAgwGABAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T16:05:51.686Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ISimulationObserver.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\ISimulationObserver.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Core\\ISimulationObserver.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\ISimulationObserver.cs",
+              "RelativeToolTip": "SpikingNet\\Core\\ISimulationObserver.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T15:27:04.823Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ScheduledStimulus.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\ScheduledStimulus.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Core\\ScheduledStimulus.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\ScheduledStimulus.cs",
+              "RelativeToolTip": "SpikingNet\\Core\\ScheduledStimulus.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T15:25:55.399Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "IStimulus.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\IStimulus.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Core\\IStimulus.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\IStimulus.cs",
+              "RelativeToolTip": "SpikingNet\\Core\\IStimulus.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T15:25:40.323Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Simulation.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\Simulation.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Core\\Simulation.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\Simulation.cs",
+              "RelativeToolTip": "SpikingNet\\Core\\Simulation.cs",
+              "ViewState": "AgIAAF4AAAAAAAAAAAAgwIIAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T15:25:26.788Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Network.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\Network.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Core\\Network.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\Network.cs",
+              "RelativeToolTip": "SpikingNet\\Core\\Network.cs",
+              "ViewState": "AgIAAAIAAAAAAAAAAAA1wCYAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T15:25:11.375Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "Synapse.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\Synapse.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Core\\Synapse.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\Synapse.cs",
+              "RelativeToolTip": "SpikingNet\\Core\\Synapse.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAAgwE8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T15:23:57.802Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "PeriodicStimulus.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\PeriodicStimulus.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Core\\PeriodicStimulus.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\PeriodicStimulus.cs",
+              "RelativeToolTip": "SpikingNet\\Core\\PeriodicStimulus.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T16:42:56.873Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Program.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Program.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Program.cs",
+              "RelativeToolTip": "SpikingNet\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T15:30:03.743Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "Neuron.cs",
+              "DocumentMoniker": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\Neuron.cs",
+              "RelativeDocumentMoniker": "SpikingNet\\Core\\Neuron.cs",
+              "ToolTip": "C:\\Users\\riht\\source\\repos\\SpikingNet\\SpikingNet\\SpikingNet\\Core\\Neuron.cs",
+              "RelativeToolTip": "SpikingNet\\Core\\Neuron.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T17:26:13.846Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
