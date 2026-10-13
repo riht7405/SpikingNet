@@ -26,7 +26,7 @@ public sealed class MainForm : Form
     public MainForm()
     {
         Text = "Spiking Network — 5 neurons + Dopamine";
-        ClientSize = new Size(900, 700);
+        ClientSize = new Size(1100, 700);
         DoubleBuffered = true;
         BackColor = Color.FromArgb(10, 14, 26);
         AutoScaleMode = AutoScaleMode.Dpi;
@@ -59,8 +59,8 @@ public sealed class MainForm : Form
 
         // --- Стимул: бесконечный периодический ---
         _sim = new Simulation(_net);
-        var stim = new PeriodicStimulus(sensor.Index, current: 0.5, period: 20, duration: 10);
-        _sim.AddStimulus(stim);
+        //var stim = new PeriodicStimulus(sensor.Index, current: 0.5, period: 20, duration: 10);
+        //_sim.AddStimulus(stim);
 
         _sim.PlasticityEnabled = true;
         _sim.LearningRate = 0.05;
@@ -81,13 +81,13 @@ public sealed class MainForm : Form
 
         // --- Координаты ---
         _positions = new PointF[]
-        {
-            new(140, 260),   // Sensor
-            new(410, 110),   // Inter-1
-            new(720, 260),   // Inter-2
-            new(410, 410),   // Output
-            new(410, 570),   // Dopamine
-        };
+{
+    new(220, 300),   // Sensor
+    new(430, 150),   // Inter-1
+    new(640, 300),   // Inter-2
+    new(430, 450),   // Output
+    new(430, 590),   // Dopamine
+};
 
         // --- Таймер ---
         _timer = new System.Windows.Forms.Timer { Interval = 100 };
@@ -384,46 +384,79 @@ public sealed class MainForm : Form
 
     private void DrawHud(Graphics g)
     {
-        using var font = new Font("Consolas", 10);
-        using var b = new SolidBrush(Color.FromArgb(220, 200, 220, 240));
+        // ============ ЛЕВАЯ КОЛОНКА — управление и статус ============
+        using var fontMono = new Font("Consolas", 10);
+        using var fontSmall = new Font("Consolas", 8.5f);
+        using var brushText = new SolidBrush(Color.FromArgb(220, 200, 220, 240));
+        using var brushDim = new SolidBrush(Color.FromArgb(160, 180, 200, 230));
 
-        g.DrawString($"Tick: {_sim.Tick}", font, b, 12, 10);
+        float y = 10;
 
+        // Tick + статус паузы
+        g.DrawString($"Tick: {_sim.Tick}", fontMono, brushText, 12, y); y += 18;
         string status = _paused
-            ? "\u23F8 PAUSED   [Space] play/pause   [Esc] exit"
-            : "\u25B6 RUNNING  [Space] pause      [Esc] exit";
-        g.DrawString(status, font, b, 12, 30);
+            ? "\u23F8 PAUSED   [Space] play   [Esc] exit"
+            : "\u25B6 RUNNING  [Space] pause  [Esc] exit";
+        g.DrawString(status, fontMono, brushText, 12, y); y += 18;
 
+        // Дофамин
         if (_sim.Modulator != null)
         {
             double lvl = _sim.Modulator.Level;
             double gain = _sim.Modulator.PlasticityGain;
-            using var fontM = new Font("Consolas", 10);
-            using var bM = new SolidBrush(Color.FromArgb(
+            using var brushDopa = new SolidBrush(Color.FromArgb(
                 (int)(80 + 175 * lvl), 220, 120, 255));
-            g.DrawString($"Dopamine: {lvl:F2}  (plasticity \u00D7{gain:F2})",
-                fontM, bM, 12, 50);
+            g.DrawString($"Dopamine: {lvl:F2}  (×{gain:F2})",
+                fontMono, brushDopa, 12, y);
+            y += 16;
 
-            int barW = 200, barX = 12, barY = 72;
+            // Полоска допамина
+            int barW = 180, barH = 6;
             using var bgBar = new SolidBrush(Color.FromArgb(60, 60, 60, 90));
             using var fillBar = new SolidBrush(Color.FromArgb(
                 (int)(150 + 105 * lvl), 220, 120, 255));
-            g.FillRectangle(bgBar, barX, barY, barW, 8);
-            g.FillRectangle(fillBar, barX, barY, (int)(barW * lvl), 8);
+            g.FillRectangle(bgBar, 12, (int)y, barW, barH);
+            g.FillRectangle(fillBar, 12, (int)y, (int)(barW * lvl), barH);
+            y += 18;
         }
 
-        using var fontSmall = new Font("Consolas", 8.5f);
-        using var b2 = new SolidBrush(Color.FromArgb(160, 180, 200, 230));
-        g.DrawString(
-            $"η={_sim.LearningRate:F4}  λ={_sim.WeightDecay:F5}  A−={_sim.AMinus:F1}   " +
-            "[ ] η   ; ' λ   , . A−   D dopamine   R reset",
-            fontSmall, b2, 12, 92);
+        // Разделитель
+        g.DrawLine(new Pen(Color.FromArgb(80, 100, 140, 200)),
+            12, y, 260, y); y += 8;
 
-        g.DrawString(
-            "blue = excitation (+)   red = inhibition (−)   purple = neuromodulator   dot = signal",
-            fontSmall, b2, 12, ClientSize.Height - 22);
+        // Параметры обучения
+        g.DrawString($"η={_sim.LearningRate:F4}  λ={_sim.WeightDecay:F5}  " +
+                     $"A−={_sim.AMinus:F1}", fontMono, brushText, 12, y);
+        y += 16;
+        g.DrawString("[ ] η   ; ' λ   , . A−   R reset", fontSmall, brushDim, 12, y);
+        y += 18;
 
-        // === Метрики baseline ===
+        // Регионы
+        g.DrawString("Regions:", fontSmall, brushDim, 12, y); y += 14;
+        foreach (var r in _net.Regions)
+        {
+            g.DrawString($"  {r.Name,-12} {r.Neurons.Count,3}N {r.Synapses.Count,3}S",
+                fontSmall, brushDim, 12, y);
+            y += 14;
+        }
+
+        // Статус сохранения (если есть)
+        if (_sim.Tick < _statusUntil)
+        {
+            using var brushStatus = new SolidBrush(Color.FromArgb(220, 255, 220, 100));
+            g.DrawString(_statusMessage, fontMono, brushStatus, 12, y);
+            y += 18;
+        }
+
+        // ============ ПРАВАЯ КОЛОНКА — метрики baseline ============
+        int rightX = ClientSize.Width - 260;
+        float yR = 10;
+
+        using var fontMetric = new Font("Consolas", 10, FontStyle.Bold);
+        using var brushMetric = new SolidBrush(Color.FromArgb(255, 200, 230, 255));
+
+        g.DrawString("─── METRICS ───", fontSmall, brushDim, rightX, yR); yR += 16;
+
         double activityLevel = _spikeWindow.Count == 0
             ? 0
             : _spikeWindow.Average() / _net.Neurons.Count;
@@ -431,53 +464,35 @@ public sealed class MainForm : Form
         double weightNorm = 0;
         foreach (var s in _net.Synapses) weightNorm += Math.Abs(s.Weight);
 
-        using var fontB = new Font("Consolas", 10, FontStyle.Bold);
-        using var bB = new SolidBrush(Color.FromArgb(255, 200, 230, 255));
-        g.DrawString($"ActivityLevel: {activityLevel:F4}   (target 0.05-0.20)",
-            fontB, bB, 12, 118);
-        g.DrawString($"WeightNorm:    {weightNorm:F3}",
-            fontB, bB, 12, 134);
-        g.DrawString($"Snapshot @ tick {_snapshotTick}  (press R to reset)",
-            fontB, bB, 12, 150);
+        g.DrawString($"ActivityLevel: {activityLevel:F4}",
+            fontMetric, brushMetric, rightX, yR); yR += 16;
+        g.DrawString("  (target 0.05–0.20)",
+            fontSmall, brushDim, rightX, yR); yR += 14;
 
-        // Распределение спайков с момента snapshot
-        using var fontD = new Font("Consolas", 8.5f);
-        using var bD = new SolidBrush(Color.FromArgb(200, 200, 220, 240));
-        float yD = 170;
-        g.DrawString("Spike distribution:", fontD, bD, 12, yD); yD += 13;
+        g.DrawString($"WeightNorm: {weightNorm:F3}",
+            fontMetric, brushMetric, rightX, yR); yR += 16;
+
+        g.DrawString($"Snapshot @ tick {_snapshotTick}",
+            fontSmall, brushDim, rightX, yR); yR += 14;
+        g.DrawString("(press R to reset counters)",
+            fontSmall, brushDim, rightX, yR); yR += 18;
+
+        // Распределение спайков
+        g.DrawString("Spike distribution:", fontSmall, brushDim, rightX, yR);
+        yR += 14;
         foreach (var n in _net.Neurons)
         {
             long delta = n.TotalSpikes - _neuronSpikesSnapshot[n.Index];
-            string line = $"  {n.Name,-10} {delta,5}";
-            g.DrawString(line, fontD, bD, 12, yD);
-            yD += 13;
+            g.DrawString($"  {n.Name,-10} {delta,6}",
+                fontSmall, brushDim, rightX, yR);
+            yR += 13;
         }
 
-        // Список регионов
-        using var fontR = new Font("Consolas", 9);
-        using var bR = new SolidBrush(Color.FromArgb(200, 170, 200, 230));
-        float yR = 105;
-        g.DrawString("Regions:", fontR, bR, 12, yR);
-        yR += 14;
-        foreach (var r in _net.Regions)
-        {
-            string line = $"  {r.Name,-12} {r.Neurons.Count,3}N  {r.Synapses.Count,3}S";
-            g.DrawString(line, fontR, bR, 12, yR);
-            yR += 14;
-        }
-
-        if (_sim.Tick < _statusUntil)
-        {
-            using var fontS = new Font("Consolas", 10);
-            using var bS = new SolidBrush(Color.FromArgb(220, 255, 220, 100));
-            g.DrawString(_statusMessage, fontS, bS, 12, yR + 4);
-        }
-
-        // Подсказка по клавишам
-        using var fontH = new Font("Consolas", 9);
-        using var bH = new SolidBrush(Color.FromArgb(180, 180, 200, 230));
-        g.DrawString("[F5] save   [F9] load   autosave every 1000 ticks + on exit",
-            fontH, bH, 12, ClientSize.Height - 40);
+        // ============ НИЗ — горячие клавиши ============
+        g.DrawString("[F5] save   [F9] load   [T] perturb   [R] reset counters",
+            fontSmall, brushDim, 12, ClientSize.Height - 40);
+        g.DrawString("blue = excitation (+)   red = inhibition (−)   purple = neuromodulator",
+            fontSmall, brushDim, 12, ClientSize.Height - 22);
     }
 
     private void InitializeComponent()
