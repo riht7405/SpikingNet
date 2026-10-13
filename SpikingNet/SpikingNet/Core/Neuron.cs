@@ -1,40 +1,91 @@
 ﻿namespace SpikingNet.Core;
-//          =[/̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅\]=
-//          | [riht]  est  via  recta  |
-//          |   () => {真理} > {}      |
-//          =\[_______________________]/=
+
+/// <summary>
+/// Фасад над плоскими массивами Network. Не хранит данные сам.
+/// Для UI и стат-анализа. В горячем цикле Simulation работаем с массивами напрямую.
+/// </summary>
 public sealed class Neuron
 {
-    public int Index { get; internal set; } = -1;          // глобальный индекс в Network
+    internal Network Net { get; }
+    public int Index { get; }
     public string Name { get; }
-
-    // Ссылка на регион и локальный индекс внутри него.
-    // Заполняется автоматически при Network.AddNeuron.
     public Region? Region { get; internal set; }
-    public int LocalIndex { get; internal set; } = -1;
 
-    // --- Состояние ---
-    public double Potential;
-    public int RefractoryRemaining;
-    public bool SpikedThisTick;
-    /// <summary>Eligibility trace — «память» о недавних спайках.</summary>
-    public double Trace;
+    internal Neuron(Network net, int index, string name)
+    {
+        Net = net;
+        Index = index;
+        Name = name;
+    }
 
-    // --- Параметры ---
-    public double Threshold { get; set; } = 1.0;
-    public double BaseThreshold { get; set; } = 1.0;  // ← новое, эталон
-    public double Decay { get; set; } = 0.9;
-    public int RefractoryPeriod { get; set; } = 2;
-    public double TraceDecay { get; set; } = 0.9;
+    public double Potential
+    {
+        get => Net._potential[Index];
+        set => Net._potential[Index] = value;
+    }
 
-    // --- Статистика ---
-    public long TotalSpikes { get; internal set; }
-    public double LastInput { get; internal set; }
+    public double Threshold
+    {
+        get => Net._threshold[Index];
+        set => Net._threshold[Index] = value;
+    }
 
-    public Neuron(string name) => Name = name;
+    public double BaseThreshold
+    {
+        get => Net._baseThreshold[Index];
+        set => Net._baseThreshold[Index] = value;
+    }
 
-    public bool InRefractory => RefractoryRemaining > 0;
+    public int RefractoryRemaining
+    {
+        get => Net._refractory[Index];
+        set => Net._refractory[Index] = value;
+    }
+
+    public int RefractoryPeriod
+    {
+        get => Net._refractoryPeriod[Index];
+        set => Net._refractoryPeriod[Index] = value;
+    }
+
+    public bool SpikedThisTick
+    {
+        get => Net._spiked[Index] != 0;
+        set => Net._spiked[Index] = value ? (byte)1 : (byte)0;
+    }
+
+    public double Trace
+    {
+        get => Net._trace[Index];
+        set => Net._trace[Index] = value;
+    }
+
+    public double Decay
+    {
+        get => Net._decay[Index];
+        set => Net._decay[Index] = value;
+    }
+
+    public double TraceDecay
+    {
+        get => Net._traceDecay[Index];
+        set => Net._traceDecay[Index] = value;
+    }
+
+    public double LastInput
+    {
+        get => Net._lastInput[Index];
+        set => Net._lastInput[Index] = value;
+    }
+
+    public long TotalSpikes
+    {
+        get => Net._totalSpikes[Index];
+        set => Net._totalSpikes[Index] = value;
+    }
+
+    public bool InRefractory => Net._refractory[Index] > 0;
 
     public override string ToString() =>
-        $"{Name}[V={Potential:F3}, spikes={TotalSpikes}, trace={Trace:F2}]";
+        $"{Name}[V={Potential:F3}, spikes={TotalSpikes}]";
 }

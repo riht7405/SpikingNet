@@ -1,78 +1,46 @@
 ﻿namespace SpikingNet.Core;
 
+/// <summary>
+/// Фасад над плоскими массивами Network для синапсов.
+/// </summary>
 public sealed class Synapse
 {
-    public int Index { get; internal set; } = -1;
-    public int PreIndex { get; }
-    public int PostIndex { get; }
-    public double Weight { get; set; }
-    public double InitialWeight { get; }
-    public int Delay { get; }
+    internal Network Net { get; }
+    public int Index { get; }
+    public Region? OwnerRegion { get; internal set; }
 
-    private readonly double[] _ring;
-    private int _readCursor;
-    private int _writeCursor;
+    internal Synapse(Network net, int index) { Net = net; Index = index; }
 
-    public Synapse(int preIndex, int postIndex, double weight, int delay)
+    public int PreIndex => Net._pre[Index];
+    public int PostIndex => Net._post[Index];
+    public int Delay => Net._delay[Index];
+
+    public double Weight
     {
-        if (delay < 1) throw new ArgumentOutOfRangeException(nameof(delay));
-        PreIndex = preIndex;
-        PostIndex = postIndex;
-        Weight = weight;
-        InitialWeight = weight;
-        Delay = delay;
-        _ring = new double[delay];
+        get => Net._weight[Index];
+        set => Net._weight[Index] = value;
     }
 
-    public double Read()
-    {
-        double v = _ring[_readCursor];
-        _readCursor = (_readCursor + 1) % Delay;
-        return v;
-    }
+    public double InitialWeight => Net._initialWeight[Index];
 
-    public void Write(double value)
-    {
-        _ring[_writeCursor] = value;
-        _writeCursor = (_writeCursor + 1) % Delay;
-    }
-
+    /// <summary>Все сигналы, летящие по этой трубе. Прогресс 0 (у входа) → 1 (у выхода).</summary>
     public IEnumerable<(float progress, double value)> InFlight()
     {
-        for (int i = 0; i < Delay; i++)
+        int stride = Net._maxDelay;
+        int baseIdx = Index * stride;
+        int read = Net._readCursor[Index];
+        int delay = Net._delay[Index];
+
+        for (int i = 0; i < delay; i++)
         {
-            int slot = (_readCursor + i) % Delay;
-            double v = _ring[slot];
+            int slot = read + i;
+            if (slot >= delay) slot -= delay;
+            double v = Net._ring[baseIdx + slot];
             if (v == 0.0) continue;
-            float progress = Delay <= 1 ? 1f : 1f - (float)i / (Delay - 1);
+
+            float progress = delay <= 1 ? 1f : 1f - (float)i / (delay - 1);
             yield return (progress, v);
         }
-    }
-
-    /// <summary>
-    /// STDP-правило. Δw = η·(A+·pre_trace·post_spike − A−·post_trace·pre_spike) − λ·w.
-    /// Применяется только к возбуждающим синапсам.
-    /// </summary>
-    public void ApplyPlasticity(
-        double learningRate,
-        double aPlus,
-        double aMinus,
-        double weightDecay,
-        double preTrace,
-        double postTrace,
-        bool preSpiked,
-        bool postSpiked)
-    {
-        if (InitialWeight <= 0) return;
-
-        double ltp = aPlus * preTrace * (postSpiked ? 1.0 : 0.0);
-        double ltd = aMinus * postTrace * (preSpiked ? 1.0 : 0.0);
-        double dw = learningRate * (ltp - ltd) - weightDecay * Weight;
-
-        Weight += dw;
-
-        if (Weight < 0.05) Weight = 0.05;
-        if (Weight > 2.0) Weight = 2.0;
     }
 
     public override string ToString() =>

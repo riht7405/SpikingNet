@@ -1,19 +1,11 @@
 ﻿using System.IO;
-//          =[/̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅\]=
-//          | [riht]  est  via  recta  |
-//          |   () => {真理} > {}      |
-//          =\[_______________________]/=
+
 namespace SpikingNet.Core;
 
-/// <summary>
-/// Сериализация состояния сети в бинарный файл.
-/// Сохраняем ТОЛЬКО состояние (potential, weights, tick) — структура
-/// всегда строится кодом. При загрузке проверяем, что структура совпадает.
-/// </summary>
 public static class Checkpoint
 {
-    private const uint Magic = 0x4E4B5053;   // "SPKN" little-endian
-    private const int Version = 1;
+    private const uint Magic = 0x4E4B5053;
+    private const int Version = 2;  // было 1, теперь 2 — новый формат
 
     public static void Save(string path, Network net, Simulation sim, Neuromodulator? mod)
     {
@@ -27,7 +19,6 @@ public static class Checkpoint
         w.Write(Version);
         w.Write(sim.Tick);
 
-        // Регионы — только метаданные для валидации
         w.Write(net.Regions.Count);
         foreach (var r in net.Regions)
         {
@@ -36,23 +27,22 @@ public static class Checkpoint
             w.Write(r.Synapses.Count);
         }
 
-        // Нейроны
-        w.Write(net.Neurons.Count);
-        foreach (var n in net.Neurons)
+        w.Write(net.NeuronCount);
+        for (int i = 0; i < net.NeuronCount; i++)
         {
-            w.Write(n.Potential);
-            w.Write(n.RefractoryRemaining);
-            w.Write(n.SpikedThisTick);
-            w.Write(n.Trace);
-            w.Write(n.TotalSpikes);
+            w.Write(net._potential[i]);
+            w.Write(net._threshold[i]);
+            w.Write(net._baseThreshold[i]);
+            w.Write(net._refractory[i]);
+            w.Write(net._spiked[i]);
+            w.Write(net._trace[i]);
+            w.Write(net._totalSpikes[i]);
         }
 
-        // Синапсы
-        w.Write(net.Synapses.Count);
-        foreach (var s in net.Synapses)
-            w.Write(s.Weight);
+        w.Write(net.SynapseCount);
+        for (int s = 0; s < net.SynapseCount; s++)
+            w.Write(net._weight[s]);
 
-        // Нейромодулятор
         w.Write(mod != null);
         if (mod != null)
         {
@@ -72,15 +62,13 @@ public static class Checkpoint
 
         int version = r.ReadInt32();
         if (version != Version)
-            throw new InvalidDataException($"Unsupported checkpoint version: {version}");
+            throw new InvalidDataException($"Unsupported version: {version}");
 
         long tick = r.ReadInt64();
 
-        // Валидация регионов
         int regionCount = r.ReadInt32();
         if (regionCount != net.Regions.Count)
-            throw new InvalidDataException(
-                $"Region count mismatch: file={regionCount}, net={net.Regions.Count}");
+            throw new InvalidDataException("Region count mismatch");
 
         for (int i = 0; i < regionCount; i++)
         {
@@ -89,55 +77,44 @@ public static class Checkpoint
             int sc = r.ReadInt32();
             var region = net.Regions[i];
             if (region.Name != name || region.Neurons.Count != nc || region.Synapses.Count != sc)
-                throw new InvalidDataException(
-                    $"Region {i} mismatch: file=({name},{nc},{sc}) net=({region.Name},{region.Neurons.Count},{region.Synapses.Count})");
+                throw new InvalidDataException($"Region {i} mismatch");
         }
 
-        // Нейроны
         int neuronCount = r.ReadInt32();
-        if (neuronCount != net.Neurons.Count)
-            throw new InvalidDataException(
-                $"Neuron count mismatch: file={neuronCount}, net={net.Neurons.Count}");
+        if (neuronCount != net.NeuronCount)
+            throw new InvalidDataException("Neuron count mismatch");
 
         for (int i = 0; i < neuronCount; i++)
         {
-            var n = net.Neurons[i];
-            n.Potential = r.ReadDouble();
-            n.RefractoryRemaining = r.ReadInt32();
-            n.SpikedThisTick = r.ReadBoolean();
-            n.Trace = r.ReadDouble();
-            n.TotalSpikes = r.ReadInt64();
+            net._potential[i] = r.ReadDouble();
+            net._threshold[i] = r.ReadDouble();
+            net._baseThreshold[i] = r.ReadDouble();
+            net._refractory[i] = r.ReadInt32();
+            net._spiked[i] = r.ReadByte();
+            net._trace[i] = r.ReadDouble();
+            net._totalSpikes[i] = r.ReadInt64();
         }
 
-        // Синапсы
         int synapseCount = r.ReadInt32();
-        if (synapseCount != net.Synapses.Count)
-            throw new InvalidDataException(
-                $"Synapse count mismatch: file={synapseCount}, net={net.Synapses.Count}");
+        if (synapseCount != net.SynapseCount)
+            throw new InvalidDataException("Synapse count mismatch");
 
-        for (int i = 0; i < synapseCount; i++)
-            net.Synapses[i].Weight = r.ReadDouble();
+        for (int s = 0; s < synapseCount; s++)
+            net._weight[s] = r.ReadDouble();
 
-        // Нейромодулятор
         bool hasMod = r.ReadBoolean();
         if (hasMod)
         {
             string name = r.ReadString();
             double level = r.ReadDouble();
             long total = r.ReadInt64();
-
             if (mod == null)
-                throw new InvalidDataException(
-                    $"Checkpoint has modulator '{name}', but no modulator provided");
-
+                throw new InvalidDataException("Checkpoint has modulator, none provided");
             if (mod.Name != name)
-                throw new InvalidDataException(
-                    $"Modulator name mismatch: file='{name}', net='{mod.Name}'");
-
+                throw new InvalidDataException("Modulator name mismatch");
             mod.RestoreState(level, total);
         }
 
-        // Tick — присваиваем в самом конце, когда всё уже загружено
         sim.Tick = tick;
     }
 }
