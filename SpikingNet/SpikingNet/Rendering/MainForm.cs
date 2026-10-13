@@ -2,7 +2,10 @@
 using SpikingNet.Core;
 //сас
 namespace SpikingNet.Rendering;
-
+//          =[/̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅\]=
+//          | [riht]  est  via  recta  |
+//          |   () => {真理} > {}      |
+//          =\[_______________________]/=
 public sealed class MainForm : Form
 {
     private readonly Network _net;
@@ -81,13 +84,17 @@ public sealed class MainForm : Form
 
         // --- Координаты ---
         _positions = new PointF[]
-{
-    new(220, 300),   // Sensor
-    new(430, 150),   // Inter-1
-    new(640, 300),   // Inter-2
-    new(430, 450),   // Output
-    new(430, 590),   // Dopamine
-};
+        {
+            new(220, 300),   // Sensor
+            new(430, 150),   // Inter-1
+            new(640, 300),   // Inter-2
+            new(430, 450),   // Output
+            new(430, 590),   // Dopamine
+        };
+
+        // В конструкторе MainForm после создания нейронов:
+        foreach (var n in _net.Neurons)
+            n.Threshold = 0.6;
 
         // --- Таймер ---
         _timer = new System.Windows.Forms.Timer { Interval = 100 };

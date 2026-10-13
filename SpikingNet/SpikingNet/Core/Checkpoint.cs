@@ -1,5 +1,8 @@
 ﻿using System.IO;
-
+//          =[/̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅\]=
+//          | [riht]  est  via  recta  |
+//          |   () => {真理} > {}      |
+//          =\[_______________________]/=
 namespace SpikingNet.Core;
 
 /// <summary>

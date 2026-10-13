@@ -1,5 +1,8 @@
 ﻿namespace SpikingNet.Core;
-
+//          =[/̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅\]=
+//          | [riht]  est  via  recta  |
+//          |   () => {真理} > {}      |
+//          =\[_______________________]/=
 public sealed class Simulation
 {
     public Network Network { get; }
@@ -21,7 +24,7 @@ public sealed class Simulation
     private readonly double[] _inputCurrents;
 
     /// Амплитуда фонового шума (случайный ток в каждый нейрон каждый такт).
-    public double NoiseAmplitude { get; set; } = 0.02;
+    public double NoiseAmplitude { get; set; } = 1.5;
 
     /// Для теста на возмущение: если PerturbationTicksLeft > 0 — 
     /// подаём PerturbationCurrent в нейрон PerturbationNeuron.
@@ -50,11 +53,15 @@ public sealed class Simulation
         Array.Clear(_inputCurrents);
         foreach (var s in _stimuli) s.Apply(Tick, _inputCurrents);
 
-        // 1.5) Фоновый шум
+        // 1.5) Фоновый шум: shot noise — редкие импульсы, а не постоянное качание
         if (NoiseAmplitude > 0)
         {
             for (int i = 0; i < n; i++)
-                _inputCurrents[i] += (_rng.NextDouble() * 2.0 - 1.0) * NoiseAmplitude;
+            {
+                // 5% вероятность импульса в этом такте
+                if (_rng.NextDouble() < 0.05)
+                    _inputCurrents[i] += NoiseAmplitude * (0.5 + _rng.NextDouble());
+            }
         }
 
         // 1.6) Возмущение (тест на реакцию)
