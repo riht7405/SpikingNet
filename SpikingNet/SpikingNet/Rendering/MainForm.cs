@@ -18,6 +18,11 @@ public sealed class MainForm : Form
     private string _statusMessage = "";
     private long _statusUntil = 0;
 
+    private readonly Queue<int> _spikeWindow = new();  // спайки за последние 100 тактов
+    private const int SpikeWindowSize = 100;
+    private long[] _neuronSpikesSnapshot = Array.Empty<long>();
+    private long _snapshotTick = 0;
+
     public MainForm()
     {
         Text = "Spiking Network — 5 neurons + Dopamine";
@@ -92,7 +97,13 @@ public sealed class MainForm : Form
             {
                 _sim.Step();
 
-                // Автосохранение каждые 1000 тактов
+                // Записываем число спайков в этом такте
+                int spikesThisTick = 0;
+                for (int i = 0; i < _net.Neurons.Count; i++)
+                    if (_net[i].SpikedThisTick) spikesThisTick++;
+                _spikeWindow.Enqueue(spikesThisTick);
+                while (_spikeWindow.Count > SpikeWindowSize) _spikeWindow.Dequeue();
+
                 if (_sim.Tick - _lastAutoSave >= 1000)
                 {
                     TrySave();
@@ -102,6 +113,10 @@ public sealed class MainForm : Form
             Invalidate();
         };
         _timer.Start();
+
+        _neuronSpikesSnapshot = new long[_net.Neurons.Count];
+        for (int i = 0; i < _net.Neurons.Count; i++)
+            _neuronSpikesSnapshot[i] = _net[i].TotalSpikes;
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -143,15 +158,19 @@ public sealed class MainForm : Form
                 TryLoad();
                 break;
 
+            case Keys.T:
+                // Возмущение: подать ток в случайный нейрон на 10 тактов
+                _sim.PerturbationNeuron = new Random().Next(_net.Neurons.Count);
+                _sim.PerturbationTicksLeft = 10;
+                _statusMessage = $"perturbation → {_net[_sim.PerturbationNeuron].Name}";
+                _statusUntil = _sim.Tick + 40;
+                break;
             case Keys.R:
-                foreach (var s in _net.Synapses) s.Weight = s.InitialWeight;
-                foreach (var n in _net.Neurons)
-                {
-                    n.TotalSpikes = 0;
-                    n.Trace = 0;
-                    n.Potential = 0;
-                    n.RefractoryRemaining = 0;
-                }
+                // Сброс статистики (не весов!)
+                _spikeWindow.Clear();
+                for (int i = 0; i < _net.Neurons.Count; i++)
+                    _neuronSpikesSnapshot[i] = _net[i].TotalSpikes;
+                _snapshotTick = _sim.Tick;
                 break;
         }
     }
@@ -403,6 +422,36 @@ public sealed class MainForm : Form
         g.DrawString(
             "blue = excitation (+)   red = inhibition (−)   purple = neuromodulator   dot = signal",
             fontSmall, b2, 12, ClientSize.Height - 22);
+
+        // === Метрики baseline ===
+        double activityLevel = _spikeWindow.Count == 0
+            ? 0
+            : _spikeWindow.Average() / _net.Neurons.Count;
+
+        double weightNorm = 0;
+        foreach (var s in _net.Synapses) weightNorm += Math.Abs(s.Weight);
+
+        using var fontB = new Font("Consolas", 10, FontStyle.Bold);
+        using var bB = new SolidBrush(Color.FromArgb(255, 200, 230, 255));
+        g.DrawString($"ActivityLevel: {activityLevel:F4}   (target 0.05-0.20)",
+            fontB, bB, 12, 118);
+        g.DrawString($"WeightNorm:    {weightNorm:F3}",
+            fontB, bB, 12, 134);
+        g.DrawString($"Snapshot @ tick {_snapshotTick}  (press R to reset)",
+            fontB, bB, 12, 150);
+
+        // Распределение спайков с момента snapshot
+        using var fontD = new Font("Consolas", 8.5f);
+        using var bD = new SolidBrush(Color.FromArgb(200, 200, 220, 240));
+        float yD = 170;
+        g.DrawString("Spike distribution:", fontD, bD, 12, yD); yD += 13;
+        foreach (var n in _net.Neurons)
+        {
+            long delta = n.TotalSpikes - _neuronSpikesSnapshot[n.Index];
+            string line = $"  {n.Name,-10} {delta,5}";
+            g.DrawString(line, fontD, bD, 12, yD);
+            yD += 13;
+        }
 
         // Список регионов
         using var fontR = new Font("Consolas", 9);

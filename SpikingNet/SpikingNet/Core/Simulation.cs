@@ -20,6 +20,17 @@ public sealed class Simulation
     private readonly List<ISimulationObserver> _observers = new();
     private readonly double[] _inputCurrents;
 
+    /// Амплитуда фонового шума (случайный ток в каждый нейрон каждый такт).
+    public double NoiseAmplitude { get; set; } = 0.02;
+
+    /// Для теста на возмущение: если PerturbationTicksLeft > 0 — 
+    /// подаём PerturbationCurrent в нейрон PerturbationNeuron.
+    public int PerturbationNeuron { get; set; } = -1;
+    public int PerturbationTicksLeft { get; set; } = 0;
+    public double PerturbationCurrent { get; set; } = 2.0;
+
+    private readonly Random _rng = new();
+
     public Simulation(Network network)
     {
         Network = network;
@@ -38,6 +49,22 @@ public sealed class Simulation
         // 1) Внешние токи
         Array.Clear(_inputCurrents);
         foreach (var s in _stimuli) s.Apply(Tick, _inputCurrents);
+
+        // 1.5) Фоновый шум
+        if (NoiseAmplitude > 0)
+        {
+            for (int i = 0; i < n; i++)
+                _inputCurrents[i] += (_rng.NextDouble() * 2.0 - 1.0) * NoiseAmplitude;
+        }
+
+        // 1.6) Возмущение (тест на реакцию)
+        if (PerturbationTicksLeft > 0
+            && PerturbationNeuron >= 0
+            && PerturbationNeuron < n)
+        {
+            _inputCurrents[PerturbationNeuron] += PerturbationCurrent;
+            PerturbationTicksLeft--;
+        }
 
         // 2) Синаптические входы (читаем ДО записи)
         foreach (var syn in Network.Synapses)
