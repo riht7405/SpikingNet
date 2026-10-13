@@ -1,11 +1,8 @@
 ﻿using System.Drawing.Drawing2D;
 using SpikingNet.Core;
-//сас
+
 namespace SpikingNet.Rendering;
-//          =[/̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅\]=
-//          | [riht]  est  via  recta  |
-//          |   () => {真理} > {}      |
-//          =\[_______________________]/=
+
 public sealed class MainForm : Form
 {
     private readonly Network _net;
@@ -21,26 +18,28 @@ public sealed class MainForm : Form
     private string _statusMessage = "";
     private long _statusUntil = 0;
 
-    private readonly Queue<int> _spikeWindow = new();  // спайки за последние 100 тактов
+    // Метрики baseline
+    private readonly Queue<int> _spikeWindow = new();
     private const int SpikeWindowSize = 100;
     private long[] _neuronSpikesSnapshot = Array.Empty<long>();
     private long _snapshotTick = 0;
 
+    // Быстрый прогон
+    private long _fastForwardTarget = 0;
+
     public MainForm()
     {
-        Text = "Spiking Network — 5 neurons + Dopamine";
+        Text = "Spiking Network — 5 neurons + homeostasis";
         ClientSize = new Size(1100, 700);
         DoubleBuffered = true;
         BackColor = Color.FromArgb(10, 14, 26);
         AutoScaleMode = AutoScaleMode.Dpi;
         KeyPreview = true;
         KeyDown += OnKeyDown;
-        FormClosing += (_, _) => TrySave();
 
-        // --- Строим сеть ---
+        // ==================== СЕТЬ ====================
         _net = new Network();
 
-        // Два региона: рефлекторная дуга и модуляторная подсистема.
         var reflex = _net.AddRegion("Reflex");
         var modulatory = _net.AddRegion("Modulatory");
 
@@ -50,6 +49,13 @@ public sealed class MainForm : Form
         var output = _net.AddNeuron(reflex, "Output");
         var dopamine = _net.AddNeuron(modulatory, "Dopamine");
 
+        // Пониженный порог — чтобы shot noise мог пробить
+        foreach (var n in _net.Neurons)
+        {
+            n.Threshold = 0.6;
+            n.BaseThreshold = 0.6;
+        }
+
         // Внутрирегиональные связи
         _net.Connect(sensor, inter1, 0.6, 1);
         _net.Connect(sensor, inter2, 0.4, 2);
@@ -57,32 +63,43 @@ public sealed class MainForm : Form
         _net.Connect(inter2, output, 0.7, 1);
         _net.Connect(output, inter1, -0.3, 2);
 
-        // Межрегиональная связь: Reflex → Modulatory
+        // Межрегиональная связь
         _net.Connect(output, dopamine, 0.9, 1);
 
-        // --- Стимул: бесконечный периодический ---
+        // ==================== СИМУЛЯЦИЯ ====================
         _sim = new Simulation(_net);
-        //var stim = new PeriodicStimulus(sensor.Index, current: 0.5, period: 20, duration: 10);
-        //_sim.AddStimulus(stim);
 
+        // Шум — единственный источник "жизни"
+        _sim.NoiseAmplitude = 1.5;
+
+        // Параметры обучения
         _sim.PlasticityEnabled = true;
         _sim.LearningRate = 0.05;
         _sim.APlus = 1.0;
         _sim.AMinus = 0.4;
         _sim.WeightDecay = 0.0005;
 
-        // --- Нейромодулятор ---
+        // Нейромодулятор
         var dopa = new Neuromodulator("Dopamine")
         {
             Decay = 0.93,
             Baseline = 0.05,
             ReleaseAmount = 1.0,
         };
-        modulatory.Modulator = dopa;     // кладём в регион (для будущей архитектуры)
-        _sim.Modulator = dopa;            // Simulation пока использует глобальный
-        _sim.ModulatorTriggerIndex = dopamine.Index;
+        modulatory.Modulator = dopa;
+        _sim.Modulator = dopa;
 
-        // --- Координаты ---
+        // Гомеостаз — регулятор
+        _sim.Homeostasis = new Homeostasis(windowSize: 100)
+        {
+            ActivityTarget = 0.12,
+            WeightNormTarget = 5.0,
+        };
+
+        // Старый триггер дофамина по спайку — отключаем
+        _sim.ModulatorTriggerIndex = -1;
+
+        // ==================== КООРДИНАТЫ ====================
         _positions = new PointF[]
         {
             new(220, 300),   // Sensor
@@ -92,40 +109,53 @@ public sealed class MainForm : Form
             new(430, 590),   // Dopamine
         };
 
-        // В конструкторе MainForm после создания нейронов:
-        foreach (var n in _net.Neurons)
-            n.Threshold = 0.6;
+        // ==================== СНАПШОТ ====================
+        _neuronSpikesSnapshot = new long[_net.Neurons.Count];
+        for (int i = 0; i < _net.Neurons.Count; i++)
+            _neuronSpikesSnapshot[i] = _net[i].TotalSpikes;
 
-        // --- Таймер ---
+        // ==================== ТАЙМЕР ====================
         _timer = new System.Windows.Forms.Timer { Interval = 100 };
         _timer.Tick += (_, _) =>
         {
             if (!_paused)
             {
-                _sim.Step();
-
-                // Записываем число спайков в этом такте
-                int spikesThisTick = 0;
-                for (int i = 0; i < _net.Neurons.Count; i++)
-                    if (_net[i].SpikedThisTick) spikesThisTick++;
-                _spikeWindow.Enqueue(spikesThisTick);
-                while (_spikeWindow.Count > SpikeWindowSize) _spikeWindow.Dequeue();
-
-                if (_sim.Tick - _lastAutoSave >= 1000)
+                // Быстрый прогон: делаем пачку тактов без перерисовки
+                int stepsThisFrame = 1;
+                if (_fastForwardTarget > 0)
                 {
-                    TrySave();
-                    _lastAutoSave = _sim.Tick;
+                    stepsThisFrame = (int)Math.Min(500, _fastForwardTarget);
+                    _fastForwardTarget -= stepsThisFrame;
+                }
+
+                for (int s = 0; s < stepsThisFrame; s++)
+                {
+                    _sim.Step();
+
+                    int spikesThisTick = 0;
+                    for (int i = 0; i < _net.Neurons.Count; i++)
+                        if (_net[i].SpikedThisTick) spikesThisTick++;
+                    _spikeWindow.Enqueue(spikesThisTick);
+                    while (_spikeWindow.Count > SpikeWindowSize) _spikeWindow.Dequeue();
+
+                    if (_sim.Tick - _lastAutoSave >= 1000)
+                    {
+                        TrySave();
+                        _lastAutoSave = _sim.Tick;
+                    }
                 }
             }
             Invalidate();
         };
         _timer.Start();
 
-        _neuronSpikesSnapshot = new long[_net.Neurons.Count];
-        for (int i = 0; i < _net.Neurons.Count; i++)
-            _neuronSpikesSnapshot[i] = _net[i].TotalSpikes;
+        // Автосохранение при закрытии
+        FormClosing += (_, _) => TrySave();
     }
 
+    // ============================================================
+    // КЛАВИШИ
+    // ============================================================
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
         switch (e.KeyCode)
@@ -133,55 +163,58 @@ public sealed class MainForm : Form
             case Keys.Space: _paused = !_paused; break;
             case Keys.Escape: Close(); break;
 
-            case Keys.OemOpenBrackets:
-                _sim.LearningRate = Math.Max(0.001, _sim.LearningRate / 1.3);
-                break;
-            case Keys.OemCloseBrackets:
-                _sim.LearningRate = Math.Min(0.5, _sim.LearningRate * 1.3);
-                break;
-
-            case Keys.OemSemicolon:
-                _sim.WeightDecay = Math.Max(0.00001, _sim.WeightDecay / 1.5);
-                break;
-            case Keys.OemQuotes:
-                _sim.WeightDecay = Math.Min(0.05, _sim.WeightDecay * 1.5);
-                break;
-
-            case Keys.Oemcomma:
-                _sim.AMinus = Math.Max(0.0, _sim.AMinus - 0.1);
-                break;
-            case Keys.OemPeriod:
-                _sim.AMinus = Math.Min(2.0, _sim.AMinus + 0.1);
-                break;
-
-            case Keys.D:
-                _sim.Modulator?.Release();
-                break;
-
-            case Keys.F5:
-                TrySave();
-                break;
-            case Keys.F9:
-                TryLoad();
-                break;
+            case Keys.F5: TrySave(); break;
+            case Keys.F9: TryLoad(); break;
 
             case Keys.T:
-                // Возмущение: подать ток в случайный нейрон на 10 тактов
                 _sim.PerturbationNeuron = new Random().Next(_net.Neurons.Count);
                 _sim.PerturbationTicksLeft = 10;
                 _statusMessage = $"perturbation → {_net[_sim.PerturbationNeuron].Name}";
                 _statusUntil = _sim.Tick + 40;
                 break;
+
             case Keys.R:
-                // Сброс статистики (не весов!)
                 _spikeWindow.Clear();
                 for (int i = 0; i < _net.Neurons.Count; i++)
                     _neuronSpikesSnapshot[i] = _net[i].TotalSpikes;
                 _snapshotTick = _sim.Tick;
                 break;
+
+            // Быстрый прогон
+            case Keys.D1: _fastForwardTarget += 5_000; break;
+            case Keys.D2: _fastForwardTarget += 20_000; break;
+            case Keys.D3: _fastForwardTarget += 100_000; break;
+
+            // LearningRate
+            case Keys.OemOpenBrackets:
+                _sim.LearningRate = Math.Max(0.001, _sim.LearningRate / 1.3); break;
+            case Keys.OemCloseBrackets:
+                _sim.LearningRate = Math.Min(0.5, _sim.LearningRate * 1.3); break;
+
+            // WeightDecay
+            case Keys.OemSemicolon:
+                _sim.WeightDecay = Math.Max(0.00001, _sim.WeightDecay / 1.5); break;
+            case Keys.OemQuotes:
+                _sim.WeightDecay = Math.Min(0.05, _sim.WeightDecay * 1.5); break;
+
+            // AMinus
+            case Keys.Oemcomma:
+                _sim.AMinus = Math.Max(0.0, _sim.AMinus - 0.1); break;
+            case Keys.OemPeriod:
+                _sim.AMinus = Math.Min(2.0, _sim.AMinus + 0.1); break;
+
+            case Keys.W:
+                System.Diagnostics.Debug.WriteLine($"=== tick {_sim.Tick} ===");
+                System.Diagnostics.Debug.WriteLine(DebugDump.DumpWeights(_net));
+                _statusMessage = "weights dumped to Debug Output";
+                _statusUntil = _sim.Tick + 40;
+                break;
         }
     }
 
+    // ============================================================
+    // СОХРАНЕНИЕ / ЗАГРУЗКА
+    // ============================================================
     private void TrySave()
     {
         try
@@ -213,18 +246,24 @@ public sealed class MainForm : Form
         }
     }
 
+    // ============================================================
+    // ОТРИСОВКА
+    // ============================================================
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
+        // 1. Трубы
         foreach (var syn in _net.Synapses)
             DrawSynapse(g, syn);
 
+        // 2. Нейроны
         for (int i = 0; i < _net.Neurons.Count; i++)
             DrawNeuron(g, _net[i], _positions[i]);
 
+        // 3. HUD
         DrawHud(g);
     }
 
@@ -242,11 +281,11 @@ public sealed class MainForm : Form
 
         bool excit = syn.Weight > 0;
         float wAbs = (float)Math.Abs(syn.Weight);
-        int alpha = (int)(90 + 130 * Math.Min(wAbs, 1.0));
+        int alpha = (int)(90 + 130 * Math.Min(wAbs, 2.0) / 2.0);
         Color color = excit
             ? Color.FromArgb(alpha, 80, 170, 255)
             : Color.FromArgb(alpha, 255, 90, 90);
-        float thickness = 2f + wAbs * 6f;
+        float thickness = 2f + wAbs * 4f;
 
         using (var pen = new Pen(color, thickness)
         { StartCap = LineCap.Round, EndCap = LineCap.Round })
@@ -256,10 +295,10 @@ public sealed class MainForm : Form
                              p1.Y + (p2.Y - p1.Y) * 0.82f);
         DrawArrowHead(g, arrowAt, ux, uy, color);
 
-        // Подпись веса (с историей если дрейфанул)
+        // Подпись веса — показываем и старт, и текущий, если разошлись
         bool drifted = Math.Abs(syn.Weight - syn.InitialWeight) > 0.01;
         string label = drifted
-            ? $"w={syn.InitialWeight:+0.00;-0.00}\u2192{syn.Weight:+0.00;-0.00} d={syn.Delay}"
+            ? $"w={syn.InitialWeight:+0.00;-0.00}→{syn.Weight:+0.00;-0.00} d={syn.Delay}"
             : $"w={syn.Weight:+0.00;-0.00} d={syn.Delay}";
 
         using (var font = new Font("Consolas", 8.5f))
@@ -284,7 +323,7 @@ public sealed class MainForm : Form
         {
             float x = p1.X + (p2.X - p1.X) * prog;
             float y = p1.Y + (p2.Y - p1.Y) * prog;
-            float dotR = 4f + (float)Math.Abs(val) * 7f;
+            float dotR = 4f + (float)Math.Abs(val) * 4f;
 
             Color dotColor = excit
                 ? Color.FromArgb(240, 160, 230, 255)
@@ -308,21 +347,20 @@ public sealed class MainForm : Form
 
     private void DrawNeuron(Graphics g, Neuron n, PointF c)
     {
+        float t = (float)Math.Clamp(n.Potential / Math.Max(0.01, n.Threshold), 0, 1);
         bool isModulator = n.Name == "Dopamine";
-        float t = (float)Math.Clamp(n.Potential / n.Threshold, 0, 1);
 
         // Свечение при спайке
         if (n.SpikedThisTick)
         {
-            Color glow = isModulator
-                ? Color.FromArgb(255, 200, 120, 255)
-                : Color.FromArgb(255, 255, 70, 70);
             for (int ring = 3; ring >= 1; ring--)
             {
                 int alpha = 60 / ring;
                 float r = Radius * (1 + ring * 0.35f);
-                using var gb = new SolidBrush(Color.FromArgb(
-                    alpha, glow.R, glow.G, glow.B));
+                Color glowColor = isModulator
+                    ? Color.FromArgb(alpha, 220, 120, 255)
+                    : Color.FromArgb(alpha, 255, 70, 70);
+                using var gb = new SolidBrush(glowColor);
                 g.FillEllipse(gb, c.X - r, c.Y - r, r * 2, r * 2);
             }
         }
@@ -339,15 +377,12 @@ public sealed class MainForm : Form
         {
             float r = Radius + 5;
             float sweep = 360f * t;
-            Color arcCol = isModulator
-                ? Color.FromArgb(240, 220, 140, 255)
-                : Color.FromArgb(240, 255, 200, 60);
-            using var pen = new Pen(arcCol, 4)
+            using var pen = new Pen(Color.FromArgb(240, 255, 200, 60), 4)
             { StartCap = LineCap.Round, EndCap = LineCap.Round };
             g.DrawArc(pen, c.X - r, c.Y - r, r * 2, r * 2, -90, sweep);
         }
 
-        // Рефрактерный период
+        // Рефрактерность
         if (n.InRefractory)
         {
             float r = Radius + 3;
@@ -359,11 +394,9 @@ public sealed class MainForm : Form
         // Контур
         Color outlineCol = n.SpikedThisTick
             ? (isModulator
-                ? Color.FromArgb(255, 220, 150, 255)
+                ? Color.FromArgb(255, 220, 120, 255)
                 : Color.FromArgb(255, 255, 120, 120))
-            : (isModulator
-                ? Color.FromArgb(180, 160, 90, 220)
-                : Color.FromArgb(180, 100, 140, 200));
+            : Color.FromArgb(180, 100, 140, 200);
         using (var pen = new Pen(outlineCol, 2))
             g.DrawEllipse(pen, c.X - Radius, c.Y - Radius, Radius * 2, Radius * 2);
 
@@ -376,11 +409,11 @@ public sealed class MainForm : Form
                 c.X - size.Width / 2, c.Y - size.Height / 2);
         }
 
-        // Информация
+        // Информация снизу
         using (var font = new Font("Consolas", 8.5f))
         {
-            string info = isModulator
-                ? $"V={n.Potential:F2}  \U0001F4A7{_sim.Modulator?.Level:F2}"
+            string info = isModulator && _sim.Modulator != null
+                ? $"V={n.Potential:F2}  \U0001F4A7{_sim.Modulator.Level:F2}"
                 : $"V={n.Potential:F2}  \u26A1{n.TotalSpikes}";
             var size = g.MeasureString(info, font);
             using var tb = new SolidBrush(Color.FromArgb(220, 200, 220, 240));
@@ -389,53 +422,77 @@ public sealed class MainForm : Form
         }
     }
 
+    // ============================================================
+    // HUD
+    // ============================================================
     private void DrawHud(Graphics g)
     {
-        // ============ ЛЕВАЯ КОЛОНКА — управление и статус ============
         using var fontMono = new Font("Consolas", 10);
         using var fontSmall = new Font("Consolas", 8.5f);
         using var brushText = new SolidBrush(Color.FromArgb(220, 200, 220, 240));
         using var brushDim = new SolidBrush(Color.FromArgb(160, 180, 200, 230));
 
+        // ============ ЛЕВАЯ КОЛОНКА ============
         float y = 10;
 
-        // Tick + статус паузы
         g.DrawString($"Tick: {_sim.Tick}", fontMono, brushText, 12, y); y += 18;
         string status = _paused
             ? "\u23F8 PAUSED   [Space] play   [Esc] exit"
             : "\u25B6 RUNNING  [Space] pause  [Esc] exit";
         g.DrawString(status, fontMono, brushText, 12, y); y += 18;
 
-        // Дофамин
-        if (_sim.Modulator != null)
+        if (_fastForwardTarget > 0)
         {
-            double lvl = _sim.Modulator.Level;
-            double gain = _sim.Modulator.PlasticityGain;
-            using var brushDopa = new SolidBrush(Color.FromArgb(
-                (int)(80 + 175 * lvl), 220, 120, 255));
-            g.DrawString($"Dopamine: {lvl:F2}  (×{gain:F2})",
-                fontMono, brushDopa, 12, y);
-            y += 16;
-
-            // Полоска допамина
-            int barW = 180, barH = 6;
-            using var bgBar = new SolidBrush(Color.FromArgb(60, 60, 60, 90));
-            using var fillBar = new SolidBrush(Color.FromArgb(
-                (int)(150 + 105 * lvl), 220, 120, 255));
-            g.FillRectangle(bgBar, 12, (int)y, barW, barH);
-            g.FillRectangle(fillBar, 12, (int)y, (int)(barW * lvl), barH);
+            using var bFF = new SolidBrush(Color.FromArgb(255, 255, 200, 100));
+            g.DrawString($"FAST-FORWARD: {_fastForwardTarget} ticks left",
+                fontMono, bFF, 12, y);
             y += 18;
         }
 
+        // Дофамин + Discomfort
+        if (_sim.Modulator != null && _sim.Homeostasis != null)
+        {
+            double lvl = _sim.Modulator.Level;
+            double gain = _sim.Modulator.PlasticityGain;
+            double disc = _sim.Homeostasis.Discomfort;
+
+            using var brushDopa = new SolidBrush(Color.FromArgb(
+                (int)(80 + 175 * lvl), 220, 120, 255));
+            g.DrawString($"Dopamine: {lvl:F2}  (×{gain:F2})",
+                fontMono, brushDopa, 12, y); y += 16;
+
+            using var brushDisc = new SolidBrush(Color.FromArgb(255, 200, 230, 255));
+            g.DrawString($"Discomfort: {disc:F3}", fontMono, brushDisc, 12, y);
+            y += 16;
+
+            // Полоски
+            int barW = 180, barH = 5;
+            using var bgBar = new SolidBrush(Color.FromArgb(60, 60, 60, 90));
+            using var fillDopa = new SolidBrush(Color.FromArgb(
+                (int)(150 + 105 * lvl), 220, 120, 255));
+            using var fillDisc = new SolidBrush(Color.FromArgb(230, 255, 120, 120));
+
+            g.FillRectangle(bgBar, 12, (int)y, barW, barH);
+            g.FillRectangle(fillDopa, 12, (int)y, (int)(barW * lvl), barH);
+            y += 8;
+
+            g.FillRectangle(bgBar, 12, (int)y, barW, barH);
+            g.FillRectangle(fillDisc, 12, (int)y,
+                (int)(barW * Math.Min(1.0, disc / 2.0)), barH);
+            y += 12;
+        }
+
         // Разделитель
-        g.DrawLine(new Pen(Color.FromArgb(80, 100, 140, 200)),
-            12, y, 260, y); y += 8;
+        using (var sepPen = new Pen(Color.FromArgb(80, 100, 140, 200)))
+            g.DrawLine(sepPen, 12, y, 260, y);
+        y += 8;
 
         // Параметры обучения
         g.DrawString($"η={_sim.LearningRate:F4}  λ={_sim.WeightDecay:F5}  " +
                      $"A−={_sim.AMinus:F1}", fontMono, brushText, 12, y);
         y += 16;
-        g.DrawString("[ ] η   ; ' λ   , . A−   R reset", fontSmall, brushDim, 12, y);
+        g.DrawString("[ ] η   ; ' λ   , . A−   R reset",
+            fontSmall, brushDim, 12, y);
         y += 18;
 
         // Регионы
@@ -447,7 +504,7 @@ public sealed class MainForm : Form
             y += 14;
         }
 
-        // Статус сохранения (если есть)
+        // Статус сохранения
         if (_sim.Tick < _statusUntil)
         {
             using var brushStatus = new SolidBrush(Color.FromArgb(220, 255, 220, 100));
@@ -455,7 +512,7 @@ public sealed class MainForm : Form
             y += 18;
         }
 
-        // ============ ПРАВАЯ КОЛОНКА — метрики baseline ============
+        // ============ ПРАВАЯ КОЛОНКА — метрики ============
         int rightX = ClientSize.Width - 260;
         float yR = 10;
 
@@ -479,6 +536,17 @@ public sealed class MainForm : Form
         g.DrawString($"WeightNorm: {weightNorm:F3}",
             fontMetric, brushMetric, rightX, yR); yR += 16;
 
+        if (_sim.Homeostasis != null)
+        {
+            g.DrawString($"Discomfort: {_sim.Homeostasis.Discomfort:F3}",
+                fontMetric, brushMetric, rightX, yR); yR += 16;
+
+            g.DrawString($"λ×{_sim.Homeostasis.WeightDecayMultiplier:F1}  " +
+                         $"θ×{_sim.Homeostasis.ThresholdMultiplier:F2}",
+                fontSmall, brushDim, rightX, yR);
+            yR += 16;
+        }
+
         g.DrawString($"Snapshot @ tick {_snapshotTick}",
             fontSmall, brushDim, rightX, yR); yR += 14;
         g.DrawString("(press R to reset counters)",
@@ -495,16 +563,11 @@ public sealed class MainForm : Form
             yR += 13;
         }
 
-        // ============ НИЗ — горячие клавиши ============
-        g.DrawString("[F5] save   [F9] load   [T] perturb   [R] reset counters",
+        // ============ НИЗ ============
+        g.DrawString("[F5] save  [F9] load  [T] perturb  [R] reset  [1/2/3] fast-forward 5k/20k/100k [W] dump weights",
             fontSmall, brushDim, 12, ClientSize.Height - 40);
         g.DrawString("blue = excitation (+)   red = inhibition (−)   purple = neuromodulator",
             fontSmall, brushDim, 12, ClientSize.Height - 22);
-    }
-
-    private void InitializeComponent()
-    {
-
     }
 
     private static Color Lerp(Color a, Color b, float t)

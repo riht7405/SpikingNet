@@ -34,6 +34,8 @@ public sealed class Simulation
 
     private readonly Random _rng = new();
 
+    public Homeostasis? Homeostasis { get; set; }
+
     public Simulation(Network network)
     {
         Network = network;
@@ -114,11 +116,20 @@ public sealed class Simulation
                          + (neuron.SpikedThisTick ? 1.0 : 0.0);
         }
 
+        // 4.4) Гомеостаз — считаем активность и дискомфорт
+        if (Homeostasis != null)
+        {
+            int spikesThisTick = 0;
+            for (int i = 0; i < n; i++)
+                if (Network[i].SpikedThisTick) spikesThisTick++;
+            Homeostasis.Tick(Network, spikesThisTick);
+        }
+
         // 4.5) Нейромодулятор
         if (Modulator != null)
         {
-            if (ModulatorTriggerIndex >= 0 &&
-                Network[ModulatorTriggerIndex].SpikedThisTick)
+            // Дофамин выделяется, когда гомеостаз УЛУЧШИЛСЯ (стало легче)
+            if (Homeostasis != null && Homeostasis.Improved)
             {
                 Modulator.Release();
             }
@@ -130,16 +141,24 @@ public sealed class Simulation
             LastPlasticityGain = 1.0;
         }
 
+        // Гомеостаз: применяем пороговый множитель ко всем нейронам
+        if (Homeostasis != null)
+        {
+            for (int i = 0; i < n; i++)
+                Network[i].Threshold = Network[i].BaseThreshold * Homeostasis.ThresholdMultiplier;
+        }
+
         // 5) Пластичность (STDP), усиленная нейромодулятором
         if (PlasticityEnabled)
         {
             double effectiveLr = LearningRate * LastPlasticityGain;
+            double effectiveWd = WeightDecay * (Homeostasis?.WeightDecayMultiplier ?? 1.0);
             foreach (var syn in Network.Synapses)
             {
                 var pre = Network[syn.PreIndex];
                 var post = Network[syn.PostIndex];
                 syn.ApplyPlasticity(
-                    effectiveLr, APlus, AMinus, WeightDecay,
+                    effectiveLr, APlus, AMinus, effectiveWd,
                     pre.Trace, post.Trace,
                     pre.SpikedThisTick, post.SpikedThisTick);
             }

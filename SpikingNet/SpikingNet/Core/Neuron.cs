@@ -22,6 +22,7 @@ public sealed class Neuron
 
     // --- Параметры ---
     public double Threshold { get; set; } = 1.0;
+    public double BaseThreshold { get; set; } = 1.0;  // ← новое, эталон
     public double Decay { get; set; } = 0.9;
     public int RefractoryPeriod { get; set; } = 2;
     public double TraceDecay { get; set; } = 0.9;
