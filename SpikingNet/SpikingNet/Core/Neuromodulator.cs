@@ -32,4 +32,11 @@ public sealed class Neuromodulator
 
     /// <summary>Множитель для LearningRate. На baseline ≈ 0.14, на пике = 1.0.</summary>
     public double PlasticityGain => 0.1 + 0.9 * Level;
+
+    /// <summary>Восстановить состояние из чекпоинта.</summary>
+    internal void RestoreState(double level, long totalReleases)
+    {
+        Level = Math.Clamp(level, 0.0, 1.0);
+        TotalReleases = totalReleases;
+    }
 }

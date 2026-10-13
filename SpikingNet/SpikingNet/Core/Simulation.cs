@@ -3,8 +3,7 @@
 public sealed class Simulation
 {
     public Network Network { get; }
-    public long Tick { get; private set; }
-
+    public long Tick { get; internal set; }
     // --- Пластичность ---
     public bool PlasticityEnabled { get; set; } = true;
     public double LearningRate { get; set; } = 0.008;

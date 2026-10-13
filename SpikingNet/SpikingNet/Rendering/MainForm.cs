@@ -13,6 +13,11 @@ public sealed class MainForm : Form
     private const float Radius = 42f;
     private bool _paused;
 
+    private const string CheckpointPath = "checkpoints/state.bin";
+    private long _lastAutoSave = 0;
+    private string _statusMessage = "";
+    private long _statusUntil = 0;
+
     public MainForm()
     {
         Text = "Spiking Network — 5 neurons + Dopamine";
@@ -22,6 +27,7 @@ public sealed class MainForm : Form
         AutoScaleMode = AutoScaleMode.Dpi;
         KeyPreview = true;
         KeyDown += OnKeyDown;
+        FormClosing += (_, _) => TrySave();
 
         // --- Строим сеть ---
         _net = new Network();
@@ -82,7 +88,17 @@ public sealed class MainForm : Form
         _timer = new System.Windows.Forms.Timer { Interval = 100 };
         _timer.Tick += (_, _) =>
         {
-            if (!_paused) _sim.Step();
+            if (!_paused)
+            {
+                _sim.Step();
+
+                // Автосохранение каждые 1000 тактов
+                if (_sim.Tick - _lastAutoSave >= 1000)
+                {
+                    TrySave();
+                    _lastAutoSave = _sim.Tick;
+                }
+            }
             Invalidate();
         };
         _timer.Start();
@@ -120,6 +136,13 @@ public sealed class MainForm : Form
                 _sim.Modulator?.Release();
                 break;
 
+            case Keys.F5:
+                TrySave();
+                break;
+            case Keys.F9:
+                TryLoad();
+                break;
+
             case Keys.R:
                 foreach (var s in _net.Synapses) s.Weight = s.InitialWeight;
                 foreach (var n in _net.Neurons)
@@ -130,6 +153,37 @@ public sealed class MainForm : Form
                     n.RefractoryRemaining = 0;
                 }
                 break;
+        }
+    }
+
+    private void TrySave()
+    {
+        try
+        {
+            Checkpoint.Save(CheckpointPath, _net, _sim, _sim.Modulator);
+            _statusMessage = $"saved @ tick {_sim.Tick}";
+            _statusUntil = _sim.Tick + 40;
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"SAVE FAILED: {ex.Message}";
+            _statusUntil = _sim.Tick + 200;
+        }
+    }
+
+    private void TryLoad()
+    {
+        try
+        {
+            Checkpoint.Load(CheckpointPath, _net, _sim, _sim.Modulator);
+            _lastAutoSave = _sim.Tick;
+            _statusMessage = $"loaded @ tick {_sim.Tick}";
+            _statusUntil = _sim.Tick + 40;
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"LOAD FAILED: {ex.Message}";
+            _statusUntil = _sim.Tick + 200;
         }
     }
 
@@ -362,6 +416,24 @@ public sealed class MainForm : Form
             g.DrawString(line, fontR, bR, 12, yR);
             yR += 14;
         }
+
+        if (_sim.Tick < _statusUntil)
+        {
+            using var fontS = new Font("Consolas", 10);
+            using var bS = new SolidBrush(Color.FromArgb(220, 255, 220, 100));
+            g.DrawString(_statusMessage, fontS, bS, 12, yR + 4);
+        }
+
+        // Подсказка по клавишам
+        using var fontH = new Font("Consolas", 9);
+        using var bH = new SolidBrush(Color.FromArgb(180, 180, 200, 230));
+        g.DrawString("[F5] save   [F9] load   autosave every 1000 ticks + on exit",
+            fontH, bH, 12, ClientSize.Height - 40);
+    }
+
+    private void InitializeComponent()
+    {
+
     }
 
     private static Color Lerp(Color a, Color b, float t)
