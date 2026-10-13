@@ -1,6 +1,6 @@
 ﻿using System.Drawing.Drawing2D;
 using SpikingNet.Core;
-
+//сас
 namespace SpikingNet.Rendering;
 
 public sealed class MainForm : Form

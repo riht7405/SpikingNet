@@ -1,5 +1,8 @@
 ﻿namespace SpikingNet.Core;
-
+//          =[/̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅\]=
+//          | [riht]  est  via  recta  |
+//          |   () => {真理} > {}      |
+//          =\[_______________________]/=
 public sealed class Neuron
 {
     public int Index { get; internal set; } = -1;          // глобальный индекс в Network
