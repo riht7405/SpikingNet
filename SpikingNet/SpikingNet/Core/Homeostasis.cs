@@ -13,6 +13,13 @@ public sealed class Homeostasis
     public double PreviousDiscomfort { get; private set; }
     public double Smoothing { get; set; } = 0.95;
 
+    // Энергия — второй (после активности) ресурс гомеостаза
+    public double Energy { get; private set; } = 1.0;
+    public double SpikeCost { get; set; } = 0.0003;
+    public double PassiveDrain { get; set; } = 0.00001;
+    public double FoodRestore { get; set; } = 0.5;
+    public double EnergyFloor { get; set; } = 0.0;
+
     // --- Выходы регулятора (множители, применяются в Simulation) ---
     public double WeightDecayMultiplier { get; private set; } = 1.0;
     public double ThresholdMultiplier { get; private set; } = 1.0;
@@ -51,7 +58,8 @@ public sealed class Homeostasis
         PreviousDiscomfort = Discomfort;
         double activityErr = Math.Abs(ActivityLevel - ActivityTarget) / ActivityTarget;
         double weightErr = Math.Abs(WeightNorm - WeightNormTarget) / WeightNormTarget;
-        Discomfort = activityErr + 0.5 * weightErr;
+        double energyErr = 1.0 - Energy;   // 0 = сыт, 1 = пуст
+        Discomfort = 0.5 * activityErr + 0.3 * weightErr + 2.0 * energyErr;
 
         // === ПРЯМОЕ УПРАВЛЕНИЕ ===
         // Вес: если слишком много — ускоряем забывание; если мало — замедляем
@@ -73,6 +81,20 @@ public sealed class Homeostasis
             ThresholdMultiplier = 0.9;
         else
             ThresholdMultiplier = 1.0;
+    }
+
+    /// <summary>Вызывать каждый такт: тратит энергию на спайки + пассивный дренаж.</summary>
+    public void RegisterSpikes(int spikeCount)
+    {
+        Energy -= spikeCount * SpikeCost + PassiveDrain;
+        if (Energy < EnergyFloor) Energy = EnergyFloor;
+        if (Energy > 1.0) Energy = 1.0;
+    }
+
+    /// <summary>Агент поел — восстановил энергию.</summary>
+    public void Eat()
+    {
+        Energy = Math.Min(1.0, Energy + FoodRestore);
     }
 
     public bool Improved => Discomfort < PreviousDiscomfort;

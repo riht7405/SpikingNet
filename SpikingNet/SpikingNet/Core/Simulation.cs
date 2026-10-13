@@ -113,6 +113,8 @@ public sealed class Simulation
             int spikesThisTick = 0;
             for (int i = 0; i < n; i++)
                 if (net._spiked[i] != 0) spikesThisTick++;
+
+            Homeostasis.RegisterSpikes(spikesThisTick);
             Homeostasis.Tick(net, spikesThisTick);
         }
 
